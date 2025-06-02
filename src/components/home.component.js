@@ -22,6 +22,8 @@ export default class Home extends Component {
   constructor(props) {
     super(props);
 
+    this.getNotes = this.getNotes.bind(this);
+    this.onAdd = this.onAdd.bind(this);
     this.onDelete = this.onDelete.bind(this);
 
     this.state = {
@@ -29,45 +31,7 @@ export default class Home extends Component {
     };
   }
 
-  addNote(note) {
-    fetch(`${api}/add`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(note),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        this.setState((prevState) => ({
-          notes: [...prevState.notes, data],
-        }));
-        window.location.reload(); // Reload to fetch the latest notes
-      })
-      .catch((error) => {
-        console.error('Error adding note:', error);
-      });
-  }
-
-  onDelete(e) {
-    e.preventDefault();
-
-    fetch(`${api}/${e.target.id}`, {
-      method: 'DELETE',
-    })
-      .then((response) => response.json())
-      .then((_data) => {
-        this.setState((prevState) => ({
-          notes: prevState.notes.filter((note) => note._id !== e.target.id),
-        }));
-      })
-      .catch((error) => {
-        console.error('Error deleting note:', error);
-      });
-  }
-
-  componentDidMount() {
-    // gets notes
+  getNotes() {
     fetch(`${api}`)
       .then((response) => response.json())
       .then((data) => {
@@ -78,29 +42,74 @@ export default class Home extends Component {
       });
   }
 
+  componentDidMount() {
+    this.getNotes();
+  }
+
+  onAdd(e) {
+    e.preventDefault();
+    const title = e.target.title.value;
+    const content = e.target.content.value;
+
+    if (title && content) {
+      let note = {
+        title: title,
+        content: content,
+      };
+
+      fetch(`${api}/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(note),
+      })
+        .then((response) => response.json())
+        .then((_) => {
+          this.getNotes();
+        })
+        .catch((error) => {
+          console.error('Error adding note:', error);
+        });
+      e.target.reset();
+    }
+  }
+
+  onDelete(e) {
+    e.preventDefault();
+
+    fetch(`${api}/${e.target.id}`, {
+      method: 'DELETE',
+    })
+      .then((response) => response.json())
+      .then((_data) => {
+        this.getNotes();
+      })
+      .catch((error) => {
+        console.error('Error deleting note:', error);
+      });
+  }
+
   render() {
     return (
       <div className="container mt-5">
         <div className="d-flex justify-content-center">
           <h1 style={{ flex: 1 }}>Notes</h1>
-          <div className="align-self-center">
-            <button className="btn btn-primary"
-              onClick={() => {
-                const title = prompt('Enter note title:');
-                const content = prompt('Enter note content:');
-                if (title && content) {
-                  this.addNote({ title, content });
-                }
-              }}>
-              Add Note
-            </button>
-          </div>
         </div>
         <hr />
         <div>
           {this.state.notes.map((note) => (
             <NoteItem key={note._id} note={note} onDelete={this.onDelete} />
           ))}
+        </div>
+        <hr />
+
+        <div className="align-self-center">
+          <form onSubmit={this.onAdd}>
+            <input type="text" name="title" placeholder="Title" className="form-control mb-2" required />
+            <textarea name="content" placeholder="Content" className="form-control mb-2" required></textarea>
+            <button type="submit" className="btn btn-primary">Add Note</button>
+          </form>
         </div>
       </div>
     );
