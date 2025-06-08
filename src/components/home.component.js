@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-const api = 'http://localhost:5000/api/notes';
+const api = process.env.REACT_APP_API_URL;
 
 function NoteItem({ note, onDelete }) {
   return (
